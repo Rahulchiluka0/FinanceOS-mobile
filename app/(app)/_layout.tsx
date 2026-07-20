@@ -41,6 +41,8 @@ export default function AppLayout() {
       <Stack.Screen name="currencies" options={{ title: 'Multi-Currency' }} />
       <Stack.Screen name="reports" options={{ title: 'Reports' }} />
       <Stack.Screen name="insights" options={{ title: 'Smart Insights' }} />
+      <Stack.Screen name="ai-cfo" options={{ title: 'Personal CFO' }} />
+      <Stack.Screen name="ai-health" options={{ title: 'Financial Health' }} />
       <Stack.Screen name="tags" options={{ title: 'Tags' }} />
       <Stack.Screen name="search" options={{ title: 'Search' }} />
       <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />

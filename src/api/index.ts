@@ -175,8 +175,48 @@ export const fxApi = {
 
 export const aiApi = {
   suggestions: () => api('/ai/suggestions'),
-  chat: (message: string) => api<{ reply: string }>('/ai/chat', { method: 'POST', body: { message } }),
+  chat: (message: string, opts: { threadId?: string | null; client?: 'web' | 'mobile' } = {}) =>
+    api<{
+      reply: string
+      answer?: string
+      facts?: Array<{ key?: string; label?: string; value?: string }>
+      citations?: Array<{ period?: string; filters?: string }>
+      threadId?: string
+      provider?: string
+    }>('/ai/chat', {
+      method: 'POST',
+      body: {
+        message,
+        threadId: opts.threadId || undefined,
+        client: opts.client || 'mobile',
+      },
+    }),
+  chatThreads: () => api<Array<{ id: string; title: string; updatedAt: string }>>('/ai/chat/threads'),
+  chatThread: (id: string) => api<any>(`/ai/chat/threads/${id}`),
+  dashboard: () => api<any>('/ai/dashboard'),
+  profile: () => api<any>('/ai/profile'),
+  refreshProfile: () => api<any>('/ai/profile/refresh', { method: 'POST', body: {} }),
+  healthScore: () => api<any>('/ai/health-score'),
+  patterns: (period?: string) =>
+    api<any>(`/ai/patterns${period ? `?period=${encodeURIComponent(period)}` : ''}`),
+  refreshPatterns: () => api<any>('/ai/patterns/refresh', { method: 'POST', body: {} }),
+  insights: (params: Record<string, string | number> = {}) => {
+    const q = new URLSearchParams(
+      Object.fromEntries(
+        Object.entries(params)
+          .filter(([, v]) => v != null && v !== '')
+          .map(([k, v]) => [k, String(v)]),
+      ),
+    ).toString()
+    return api<any>(`/ai/insights${q ? `?${q}` : ''}`)
+  },
+  refreshInsights: () => api<any>('/ai/insights/refresh', { method: 'POST', body: {} }),
+  dismissInsight: (id: string) => api(`/ai/insights/${id}/dismiss`, { method: 'POST', body: {} }),
+  actInsight: (id: string) => api(`/ai/insights/${id}/act`, { method: 'POST', body: {} }),
+  smartInsights: () => api<any>('/insights/smart'),
 }
+
+
 
 export const dataApi = {
   backup: () => api('/data/backup'),

@@ -1,199 +1,204 @@
-import { useMemo } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
-import { useData, useEnsureData } from '@/context/DataContext'
+import { useCallback, useEffect, useState } from 'react'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { router } from 'expo-router'
+import { aiApi } from '@/api'
 import { Screen } from '@/components/layout/Screen'
 import { PageHead } from '@/components/ui/PageHead'
 import { Badge } from '@/components/ui/Badge'
 import { MetricTile } from '@/components/ui/MetricTile'
-import { formatCurrency } from '@/utils/format'
+import { Button } from '@/components/ui/Button'
+import { LoadingState } from '@/components/ui/LoadingState'
 import { colors, radius } from '@/theme'
+import { lightTap } from '@/utils/haptics'
+
+const FILTERS = [
+  { id: 'all', label: 'All' },
+  { id: 'overspend', label: 'Money' },
+  { id: 'risk', label: 'Risk' },
+  { id: 'opportunity', label: 'Tips' },
+  { id: 'goal', label: 'Goals' },
+]
+
+const PATTERN_LABELS: Record<string, string> = {
+  top_spend: 'Top spend',
+  weekend_lift: 'Weekend lift',
+  post_payday_lift: 'Post-payday',
+  category_mom: 'Category MoM',
+  subscription_creep: 'Subscriptions',
+  cashflow_volatility: 'Cashflow volatility',
+}
+
+function severityTone(s: string): 'danger' | 'warning' | 'info' | 'success' | 'neutral' {
+  if (s === 'high') return 'danger'
+  if (s === 'medium') return 'warning'
+  return 'info'
+}
 
 export default function InsightsScreen() {
-  useEnsureData(['dashboard', 'categorySpend', 'budgets', 'transactions', 'goals', 'bills'])
-  const { dashboard, categorySpend, budgets, transactions, goals, bills, loading, refresh } =
-    useData()
-  const stats = dashboard || {
-    savingRate: 0,
-    monthlyExpenses: 0,
-    netWorth: 0,
-    healthScore: 0,
+  const [pack, setPack] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [error, setError] = useState('')
+  const [filter, setFilter] = useState('all')
+
+  const load = useCallback(async () => {
+    try {
+      const data = await aiApi.smartInsights()
+      setPack(data)
+      setError('')
+    } catch (err: any) {
+      setError(err.message || 'Failed to load')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  const refresh = async () => {
+    setRefreshing(true)
+    lightTap()
+    try {
+      await aiApi.refreshInsights()
+      await aiApi.refreshPatterns()
+      await load()
+    } catch (err: any) {
+      setError(err.message || 'Refresh failed')
+    } finally {
+      setRefreshing(false)
+    }
   }
 
-  const smartInsights = useMemo(() => {
-    const topCat = categorySpend[0]
-    const largestTx = [...transactions]
-      .filter((t) => t.type === 'expense')
-      .sort((a, b) => b.amount - a.amount)[0]
-    const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()
-    const cashBurn = stats.monthlyExpenses ? Math.round(stats.monthlyExpenses / daysInMonth) : 0
-    const topGoal = [...goals].sort(
-      (a, b) => b.current / (b.target || 1) - a.current / (a.target || 1),
-    )[0]
-    const unpaid = bills.filter((b) => b.status === 'unpaid').length
+  const dismiss = async (id: string) => {
+    try {
+      await aiApi.dismissInsight(id)
+      setPack((p: any) => ({
+        ...p,
+        insights: (p?.insights || []).filter((i: any) => i.id !== id),
+      }))
+    } catch (err: any) {
+      setError(err.message || 'Dismiss failed')
+    }
+  }
 
-    return [
-      {
-        id: 1,
-        label: 'Top spending category',
-        value: topCat?.name || '—',
-        detail: topCat ? `${formatCurrency(topCat.value)} this month` : 'No spend yet',
-      },
-      {
-        id: 2,
-        label: 'Largest expense',
-        value: largestTx?.title || '—',
-        detail: largestTx ? formatCurrency(largestTx.amount) : 'No expenses yet',
-      },
-      {
-        id: 3,
-        label: 'Saving rate',
-        value: `${stats.savingRate ?? 0}%`,
-        detail: (stats.savingRate ?? 0) >= 30 ? 'Above 30% target' : 'Below 30% target',
-      },
-      {
-        id: 4,
-        label: 'Health score',
-        value: `${stats.healthScore ?? 0}/100`,
-        detail: 'Based on saving rate',
-      },
-      {
-        id: 5,
-        label: 'Cash burn',
-        value: formatCurrency(cashBurn),
-        detail: 'Per day this month',
-      },
-      {
-        id: 6,
-        label: 'Net worth',
-        value: formatCurrency(stats.netWorth || 0),
-        detail: 'Accounts + investments − loans',
-      },
-      {
-        id: 7,
-        label: 'Unpaid bills',
-        value: String(unpaid),
-        detail: unpaid ? 'Action needed' : 'All clear',
-      },
-      {
-        id: 8,
-        label: 'Goal prediction',
-        value: topGoal?.name || '—',
-        detail: topGoal
-          ? `${Math.round((topGoal.current / (topGoal.target || 1)) * 100)}% funded`
-          : 'Add a goal to track',
-      },
-    ]
-  }, [categorySpend, transactions, stats, goals, bills])
+  if (loading && !pack) {
+    return (
+      <Screen>
+        <LoadingState label="Loading coach…" />
+      </Screen>
+    )
+  }
 
-  const insights = useMemo(() => {
-    const items: { id: string; type: 'positive' | 'info' | 'warning'; text: string }[] = []
-    if (stats.savingRate != null) {
-      items.push({
-        id: 'saving',
-        type: (stats.savingRate ?? 0) >= 30 ? 'positive' : 'info',
-        text: `Your saving rate is ${stats.savingRate}% this month.`,
-      })
-    }
-    const over = budgets.find((b) => b.spent > b.limit)
-    if (over) {
-      items.push({
-        id: 'budget',
-        type: 'warning',
-        text: `${over.category} is over budget by ${formatCurrency(over.spent - over.limit)}.`,
-      })
-    }
-    if (categorySpend[0]) {
-      items.push({
-        id: 'top',
-        type: 'info',
-        text: `${categorySpend[0].name} leads spending at ${formatCurrency(categorySpend[0].value)}.`,
-      })
-    }
-    return items
-  }, [stats, budgets, categorySpend])
+  const insights = (pack?.insights || []).filter((i: any) => {
+    if (filter === 'all') return true
+    if (filter === 'goal') return i.type === 'goal' || i.type === 'win'
+    return i.type === filter
+  })
+  const patterns = pack?.patterns || []
 
   return (
-    <Screen
-      refreshing={loading}
-      onRefresh={() =>
-        refresh(['dashboard', 'categorySpend', 'budgets', 'transactions', 'goals', 'bills'])
-      }
-    >
+    <Screen>
       <PageHead
         kicker="Intelligence"
         title="Smart Insights"
-        subtitle="Automated metrics and narrative signals from your data."
+        subtitle="Coach cards + spending patterns from your Twin"
+        actions={
+          <Button size="sm" variant="secondary" onPress={refresh} disabled={refreshing}>
+            {refreshing ? '…' : 'Refresh'}
+          </Button>
+        }
       />
 
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+
       <View style={styles.metrics}>
-        {smartInsights.map((s) => (
-          <MetricTile
-            key={s.id}
-            label={s.label}
-            value={s.value}
-            hint={s.detail}
-            trend={
-              s.label.includes('Saving') && (stats.savingRate ?? 0) >= 30 ? 'up' : undefined
-            }
-          />
+        <MetricTile label="Insights" value={String((pack?.insights || []).length)} />
+        <MetricTile label="Patterns" value={String(patterns.length)} hint={pack?.period} />
+      </View>
+
+      <View style={styles.filters}>
+        {FILTERS.map((f) => (
+          <Pressable
+            key={f.id}
+            onPress={() => setFilter(f.id)}
+            style={[styles.chip, filter === f.id && styles.chipActive]}
+          >
+            <Text style={[styles.chipText, filter === f.id && styles.chipTextActive]}>{f.label}</Text>
+          </Pressable>
         ))}
       </View>
 
-      <View style={styles.panel}>
-        <View style={styles.panelHead}>
-          <View>
-            <Text style={styles.h2}>Insights feed</Text>
-            <Text style={styles.meta}>What changed and what to watch</Text>
+      <Text style={styles.section}>Coach feed</Text>
+      {insights.length === 0 && <Text style={styles.muted}>No insights in this filter.</Text>}
+      {insights.map((i: any) => (
+        <View key={i.id} style={styles.card}>
+          <View style={styles.row}>
+            <Badge tone={severityTone(i.severity)}>{i.severity}</Badge>
+            <Badge tone="neutral">{i.type}</Badge>
           </View>
-          <Badge tone="info">Live</Badge>
+          <Text style={styles.title}>{i.title}</Text>
+          <Text style={styles.body}>{i.body}</Text>
+          <View style={styles.row}>
+            {i.action?.href ? (
+              <Button
+                size="sm"
+                variant="secondary"
+                onPress={() => {
+                  const href = String(i.action.href).replace(/^\//, '')
+                  router.push(`/(app)/${href}` as any)
+                }}
+              >
+                {i.action.label || 'Open'}
+              </Button>
+            ) : null}
+            <Button size="sm" variant="ghost" onPress={() => dismiss(i.id)}>
+              Dismiss
+            </Button>
+          </View>
         </View>
-        {!insights.length ? (
-          <Text style={styles.meta}>Insights will appear as you add data.</Text>
-        ) : null}
-        {insights.map((item) => (
-          <View
-            key={item.id}
-            style={[
-              styles.insight,
-              item.type === 'warning' && styles.insightWarn,
-              item.type === 'positive' && styles.insightPos,
-            ]}
-          >
-            <Badge
-              tone={
-                item.type === 'warning' ? 'warning' : item.type === 'positive' ? 'success' : 'info'
-              }
-            >
-              {item.type}
-            </Badge>
-            <Text style={styles.insightText}>{item.text}</Text>
-          </View>
-        ))}
-      </View>
+      ))}
+
+      <Text style={[styles.section, { marginTop: 16 }]}>Patterns · {pack?.period}</Text>
+      {patterns.map((p: any) => (
+        <View key={p.key} style={styles.card}>
+          <Text style={styles.patternKey}>{PATTERN_LABELS[p.key] || p.key}</Text>
+          <Text style={styles.body}>{p.summary}</Text>
+        </View>
+      ))}
     </Screen>
   )
 }
 
 const styles = StyleSheet.create({
-  metrics: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 14 },
-  panel: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
+  error: { color: colors.danger, marginBottom: 8, fontSize: 13 },
+  metrics: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 },
+  filters: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
     borderWidth: 1,
     borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  chipActive: { borderColor: colors.brand, backgroundColor: colors.brandSoft },
+  chipText: { fontSize: 12, fontWeight: '600', color: colors.muted },
+  chipTextActive: { color: colors.brand },
+  section: { fontWeight: '700', color: colors.ink, marginBottom: 8, fontSize: 15 },
+  muted: { color: colors.muted, fontSize: 13, marginBottom: 8 },
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
     padding: 14,
-    gap: 10,
-  },
-  panelHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  h2: { fontSize: 16, fontWeight: '800', color: colors.ink },
-  meta: { color: colors.muted, fontSize: 13 },
-  insight: {
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
     gap: 8,
-    padding: 12,
-    borderRadius: radius.md,
-    backgroundColor: colors.bgElevated,
   },
-  insightWarn: { backgroundColor: '#fef3c7' },
-  insightPos: { backgroundColor: '#e0f2fe' },
-  insightText: { color: colors.ink, fontSize: 14, fontWeight: '600' },
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
+  title: { fontWeight: '700', color: colors.ink, fontSize: 15 },
+  body: { color: colors.muted, fontSize: 13, lineHeight: 18 },
+  patternKey: { fontSize: 11, fontWeight: '700', color: colors.brand, textTransform: 'uppercase' },
 })

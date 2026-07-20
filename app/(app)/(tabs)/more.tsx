@@ -13,6 +13,8 @@ import {
   Coins,
   BarChart3,
   Lightbulb,
+  Brain,
+  Activity,
   Tag,
   Search,
   Bell,
@@ -55,6 +57,8 @@ const sections = [
     items: [
       { href: '/(app)/reports', label: 'Reports', icon: BarChart3 },
       { href: '/(app)/insights', label: 'Smart Insights', icon: Lightbulb },
+      { href: '/(app)/ai-cfo', label: 'Personal CFO', icon: Brain },
+      { href: '/(app)/ai-health', label: 'Financial Health', icon: Activity },
       { href: '/(app)/tags', label: 'Tags', icon: Tag },
       { href: '/(app)/search', label: 'Search', icon: Search },
     ],

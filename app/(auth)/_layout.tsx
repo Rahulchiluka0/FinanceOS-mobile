@@ -1,0 +1,22 @@
+import { Redirect, Stack } from 'expo-router'
+import { ActivityIndicator, View } from 'react-native'
+import { useAuth } from '@/context/AuthContext'
+import { colors } from '@/theme'
+
+export default function AuthLayout() {
+  const { isAuthenticated, bootstrapping } = useAuth()
+
+  if (bootstrapping) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg }}>
+        <ActivityIndicator color={colors.brand} />
+      </View>
+    )
+  }
+
+  if (isAuthenticated) return <Redirect href="/(app)/(tabs)/dashboard" />
+
+  return (
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }} />
+  )
+}

@@ -67,6 +67,7 @@ class ModalBodyErrorBoundary extends Component<
 export function Modal({ open, title, onClose, children }: Props) {
   const insets = useSafeAreaInsets()
   const keyboardHeight = useKeyboardHeight()
+  const keyboardOpen = keyboardHeight > 0
 
   if (!open) return null
 
@@ -90,8 +91,9 @@ export function Modal({ open, title, onClose, children }: Props) {
               styles.sheet,
               {
                 paddingBottom: Math.max(insets.bottom, 16) + 8,
-                marginBottom: keyboardHeight > 0 ? keyboardHeight : 0,
-                maxHeight: keyboardHeight > 0 ? '62%' : '92%',
+                // Lift sheet above keyboard (pan mode — window does not shrink).
+                marginBottom: keyboardOpen ? keyboardHeight : 0,
+                maxHeight: '92%',
               },
             ]}
           >

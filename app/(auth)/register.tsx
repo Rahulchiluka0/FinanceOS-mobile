@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, Text, View } from 'react-native'
 import { Link, router } from 'expo-router'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -41,76 +41,85 @@ export default function RegisterScreen() {
   })
 
   return (
-    <Screen>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.brand}>
-          <BrandMark size={40} />
-          <Wordmark />
-        </View>
-        <Text style={styles.kicker}>Create account</Text>
-        <Text style={styles.title}>Join FinanceOS</Text>
-        <Text style={styles.muted}>Start clarifying your money in minutes.</Text>
+    <Screen edges={['top', 'left', 'right', 'bottom']}>
+      <View style={styles.brand}>
+        <BrandMark size={40} />
+        <Wordmark />
+      </View>
+      <Text style={styles.kicker}>Create account</Text>
+      <Text style={styles.title}>Join FinanceOS</Text>
+      <Text style={styles.muted}>Start clarifying your money in minutes.</Text>
 
-        <View style={styles.form}>
-          <Controller
-            control={control}
-            name="name"
-            render={({ field: { onChange, value } }) => (
-              <Input label="Full name" value={value} onChangeText={onChange} error={errors.name?.message} />
-            )}
-          />
-          <Controller
-            control={control}
-            name="email"
-            render={({ field: { onChange, value } }) => (
-              <Input
-                label="Email"
-                autoCapitalize="none"
-                keyboardType="email-address"
-                value={value}
-                onChangeText={onChange}
-                error={errors.email?.message}
-              />
-            )}
-          />
-          <Controller
-            control={control}
-            name="password"
-            render={({ field: { onChange, value } }) => (
-              <Input
-                label="Password"
-                secureTextEntry
-                hint="At least 8 characters"
-                value={value}
-                onChangeText={onChange}
-                error={errors.password?.message}
-              />
-            )}
-          />
-          <Controller
-            control={control}
-            name="confirm"
-            render={({ field: { onChange, value } }) => (
-              <Input
-                label="Confirm password"
-                secureTextEntry
-                value={value}
-                onChangeText={onChange}
-                error={errors.confirm?.message || formError}
-              />
-            )}
-          />
-          <Button size="lg" loading={isSubmitting} onPress={onSubmit}>
-            Create account
-          </Button>
-          <Text style={styles.footer}>
-            Already have an account?{' '}
-            <Link href="/(auth)/login" style={styles.link}>
-              Sign in
-            </Link>
-          </Text>
-        </View>
-      </KeyboardAvoidingView>
+      <View style={styles.form}>
+        <Controller
+          control={control}
+          name="name"
+          render={({ field: { onChange, value } }) => (
+            <Input
+              label="Full name"
+              placeholder="e.g. Rahul Sharma"
+              autoComplete="name"
+              value={value}
+              onChangeText={onChange}
+              error={errors.name?.message}
+            />
+          )}
+        />
+        <Controller
+          control={control}
+          name="email"
+          render={({ field: { onChange, value } }) => (
+            <Input
+              label="Email"
+              placeholder="you@example.com"
+              autoCapitalize="none"
+              keyboardType="email-address"
+              autoComplete="email"
+              value={value}
+              onChangeText={onChange}
+              error={errors.email?.message}
+            />
+          )}
+        />
+        <Controller
+          control={control}
+          name="password"
+          render={({ field: { onChange, value } }) => (
+            <Input
+              label="Password"
+              placeholder="At least 8 characters"
+              secureTextEntry
+              hint="At least 8 characters"
+              value={value}
+              onChangeText={onChange}
+              error={errors.password?.message}
+            />
+          )}
+        />
+        <Controller
+          control={control}
+          name="confirm"
+          render={({ field: { onChange, value } }) => (
+            <Input
+              label="Confirm password"
+              placeholder="Re-enter password"
+              secureTextEntry
+              value={value}
+              onChangeText={onChange}
+              error={errors.confirm?.message || formError}
+            />
+          )}
+        />
+        <Button size="lg" loading={isSubmitting} onPress={onSubmit}>
+          Create account
+        </Button>
+        <Text style={styles.footer}>
+          Already have an account?{' '}
+          <Link href="/(auth)/login" style={styles.link}>
+            Sign in
+          </Link>
+        </Text>
+      </View>
     </Screen>
   )
 }

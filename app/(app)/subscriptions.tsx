@@ -169,9 +169,15 @@ export default function SubscriptionsScreen() {
         title={form.id ? 'Edit subscription' : 'Add subscription'}
         onClose={() => setOpen(false)}
       >
-        <Input label="Name" value={form.name} onChangeText={(name) => setForm((f) => ({ ...f, name }))} />
+        <Input
+          label="Name"
+          placeholder="e.g. Netflix"
+          value={form.name}
+          onChangeText={(name) => setForm((f) => ({ ...f, name }))}
+        />
         <Input
           label="Amount (₹)"
+          placeholder="e.g. 649"
           keyboardType="numeric"
           value={form.amount}
           onChangeText={(amount) => setForm((f) => ({ ...f, amount }))}
@@ -187,6 +193,7 @@ export default function SubscriptionsScreen() {
         />
         <Input
           label="Next renewal (YYYY-MM-DD)"
+          placeholder="2026-08-01"
           value={form.nextRenewal}
           onChangeText={(nextRenewal) => setForm((f) => ({ ...f, nextRenewal }))}
         />

@@ -7,11 +7,11 @@ import { Screen } from '@/components/layout/Screen'
 import { Badge } from '@/components/ui/Badge'
 import { MetricTile } from '@/components/ui/MetricTile'
 import { ProgressBar } from '@/components/ui/ProgressBar'
-import { LoadingState } from '@/components/ui/LoadingState'
 import { CashFlowChart } from '@/components/charts/CashFlowChart'
 import { CategoryPieChart } from '@/components/charts/CategoryPieChart'
 import { formatCurrency } from '@/utils/format'
 import { colors, radius } from '@/theme'
+import { DashboardLoading } from '@/components/ui/DashboardLoading'
 
 function buildInsights({ dashboard, budgets, categorySpend }: any) {
   const items: { id: string; type: string; text: string }[] = []
@@ -66,8 +66,8 @@ export default function DashboardScreen() {
 
   if (loading && !dashboard) {
     return (
-      <Screen>
-        <LoadingState label="Loading dashboard…" />
+      <Screen scroll={false}>
+        <DashboardLoading />
       </Screen>
     )
   }

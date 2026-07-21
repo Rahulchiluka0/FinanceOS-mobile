@@ -57,6 +57,7 @@ export default function ResetPasswordScreen() {
           render={({ field: { onChange, value } }) => (
             <Input
               label="New password"
+              placeholder="At least 8 characters"
               secureTextEntry
               hint="At least 8 characters"
               value={value}
@@ -71,6 +72,7 @@ export default function ResetPasswordScreen() {
           render={({ field: { onChange, value } }) => (
             <Input
               label="Confirm password"
+              placeholder="Re-enter password"
               secureTextEntry
               value={value}
               onChangeText={onChange}

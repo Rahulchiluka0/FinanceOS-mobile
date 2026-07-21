@@ -357,7 +357,12 @@ export default function TransactionsScreen() {
       ) : null}
 
       <Modal open={editOpen} title={form.id ? 'Edit transaction' : 'New transaction'} onClose={() => setEditOpen(false)}>
-        <Input label="Title" value={form.title} onChangeText={(title) => setForm((f) => ({ ...f, title }))} />
+        <Input
+          label="Title"
+          placeholder="e.g. Swiggy order"
+          value={form.title}
+          onChangeText={(title) => setForm((f) => ({ ...f, title }))}
+        />
         <SelectField
           label="Type"
           value={form.type}
@@ -370,6 +375,7 @@ export default function TransactionsScreen() {
         />
         <Input
           label="Amount"
+          placeholder="e.g. 640"
           keyboardType="numeric"
           value={form.amount}
           onChangeText={(amount) => setForm((f) => ({ ...f, amount }))}
@@ -400,14 +406,21 @@ export default function TransactionsScreen() {
         ) : null}
         <Input
           label="Date (YYYY-MM-DD)"
+          placeholder="2026-07-21"
           value={form.date}
           onChangeText={(date) => setForm((f) => ({ ...f, date }))}
         />
-        <Input label="Notes" value={form.notes} onChangeText={(notes) => setForm((f) => ({ ...f, notes }))} />
+        <Input
+          label="Notes"
+          placeholder="Optional notes…"
+          value={form.notes}
+          onChangeText={(notes) => setForm((f) => ({ ...f, notes }))}
+        />
         <View style={styles.tagRow}>
           <View style={{ flex: 1 }}>
             <Input
               label="Add tag"
+              placeholder="Add tag, e.g. travel"
               value={form.tagInput}
               onChangeText={(tagInput) => setForm((f) => ({ ...f, tagInput }))}
               onSubmitEditing={addTag}

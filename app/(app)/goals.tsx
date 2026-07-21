@@ -166,9 +166,15 @@ export default function GoalsScreen() {
       </View>
 
       <Modal open={open} title={form.id ? 'Edit goal' : 'New goal'} onClose={() => setOpen(false)}>
-        <Input label="Name" value={form.name} onChangeText={(name) => setForm((f) => ({ ...f, name }))} />
+        <Input
+          label="Name"
+          placeholder="e.g. Emergency fund"
+          value={form.name}
+          onChangeText={(name) => setForm((f) => ({ ...f, name }))}
+        />
         <Input
           label="Target (₹)"
+          placeholder="e.g. 100000"
           keyboardType="numeric"
           value={form.target}
           onChangeText={(target) => setForm((f) => ({ ...f, target }))}
@@ -182,6 +188,7 @@ export default function GoalsScreen() {
         {form.id ? (
           <Input
             label="Current saved (₹)"
+            placeholder="e.g. 10000"
             keyboardType="numeric"
             value={form.current}
             onChangeText={(current) => setForm((f) => ({ ...f, current }))}
@@ -207,6 +214,7 @@ export default function GoalsScreen() {
         </Text>
         <Input
           label="Amount (₹)"
+          placeholder="e.g. 5000"
           keyboardType="numeric"
           value={amount}
           onChangeText={setAmount}

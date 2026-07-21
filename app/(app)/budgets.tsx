@@ -156,12 +156,14 @@ export default function BudgetsScreen() {
         />
         <Input
           label="Limit (₹)"
+          placeholder="e.g. 20000"
           keyboardType="numeric"
           value={form.limit}
           onChangeText={(limit) => setForm((f) => ({ ...f, limit }))}
         />
         <Input
           label="Alert at (%)"
+          placeholder="80"
           keyboardType="numeric"
           value={form.alertAt}
           onChangeText={(alertAt) => setForm((f) => ({ ...f, alertAt }))}

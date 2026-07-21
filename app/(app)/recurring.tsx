@@ -204,9 +204,15 @@ export default function RecurringScreen() {
       </View>
 
       <Modal open={open} title={form.id ? 'Edit recurring' : 'Add recurring'} onClose={() => setOpen(false)}>
-        <Input label="Title" value={form.title} onChangeText={(title) => setForm((f) => ({ ...f, title }))} />
+        <Input
+          label="Title"
+          placeholder="e.g. Salary"
+          value={form.title}
+          onChangeText={(title) => setForm((f) => ({ ...f, title }))}
+        />
         <Input
           label="Amount (₹)"
+          placeholder="e.g. 75000"
           keyboardType="numeric"
           value={form.amount}
           onChangeText={(amount) => setForm((f) => ({ ...f, amount }))}

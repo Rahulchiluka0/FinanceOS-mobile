@@ -94,7 +94,12 @@ export default function SettingsScreen() {
           </View>
           <Text style={styles.meta}>{user?.email}</Text>
         </View>
-        <Input label="Display name" value={name} onChangeText={setName} />
+        <Input
+          label="Display name"
+          placeholder="e.g. Alex Kumar"
+          value={name}
+          onChangeText={setName}
+        />
         <Button loading={busy === 'profile'} disabled={busy !== null && busy !== 'profile'} onPress={saveProfile}>
           Save profile
         </Button>
@@ -104,18 +109,21 @@ export default function SettingsScreen() {
         <Text style={styles.h2}>Change password</Text>
         <Input
           label="Current password"
+          placeholder="Enter current password"
           secureTextEntry
           value={password.current}
           onChangeText={(current) => setPassword((p) => ({ ...p, current }))}
         />
         <Input
           label="New password"
+          placeholder="At least 8 characters"
           secureTextEntry
           value={password.next}
           onChangeText={(next) => setPassword((p) => ({ ...p, next }))}
         />
         <Input
           label="Confirm password"
+          placeholder="Re-enter new password"
           secureTextEntry
           value={password.confirm}
           onChangeText={(confirm) => setPassword((p) => ({ ...p, confirm }))}

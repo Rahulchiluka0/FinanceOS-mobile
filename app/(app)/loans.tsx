@@ -189,44 +189,56 @@ export default function LoansScreen() {
       </View>
 
       <Modal open={open} title={form.id ? 'Edit loan' : 'Add loan'} onClose={() => setOpen(false)}>
-        <Input label="Name" value={form.name} onChangeText={(name) => setForm((f) => ({ ...f, name }))} />
+        <Input
+          label="Name"
+          placeholder="e.g. Home loan — HDFC"
+          value={form.name}
+          onChangeText={(name) => setForm((f) => ({ ...f, name }))}
+        />
         <Input
           label="Principal (₹)"
+          placeholder="e.g. 2500000"
           keyboardType="numeric"
           value={form.principal}
           onChangeText={(principal) => setForm((f) => ({ ...f, principal }))}
         />
         <Input
           label="Remaining (₹)"
+          placeholder="e.g. 1800000"
           keyboardType="numeric"
           value={form.remaining}
           onChangeText={(remaining) => setForm((f) => ({ ...f, remaining }))}
         />
         <Input
           label="Rate (%)"
+          placeholder="e.g. 8.5"
           keyboardType="decimal-pad"
           value={form.rate}
           onChangeText={(rate) => setForm((f) => ({ ...f, rate }))}
         />
         <Input
           label="EMI (₹)"
+          placeholder="e.g. 21500"
           keyboardType="numeric"
           value={form.emi}
           onChangeText={(emi) => setForm((f) => ({ ...f, emi }))}
         />
         <Input
           label="Next due (YYYY-MM-DD)"
+          placeholder="2026-08-01"
           value={form.nextDue}
           onChangeText={(nextDue) => setForm((f) => ({ ...f, nextDue }))}
         />
         <Input
           label="Tenure (months)"
+          placeholder="e.g. 240"
           keyboardType="numeric"
           value={form.tenureMonths}
           onChangeText={(tenureMonths) => setForm((f) => ({ ...f, tenureMonths }))}
         />
         <Input
           label="Paid months"
+          placeholder="e.g. 36"
           keyboardType="numeric"
           value={form.paidMonths}
           onChangeText={(paidMonths) => setForm((f) => ({ ...f, paidMonths }))}

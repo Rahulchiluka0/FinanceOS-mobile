@@ -70,6 +70,7 @@ export default function ForgotPasswordScreen() {
             render={({ field: { onChange, value } }) => (
               <Input
                 label="Email"
+                placeholder="you@example.com"
                 autoCapitalize="none"
                 keyboardType="email-address"
                 value={value}

@@ -273,6 +273,7 @@ export default function AccountsScreen() {
       >
         <Input
           label="Name"
+          placeholder="e.g. HDFC Savings"
           value={form.name}
           onChangeText={(name) => setForm((f) => ({ ...f, name }))}
         />
@@ -284,6 +285,7 @@ export default function AccountsScreen() {
         />
         <Input
           label="Opening balance"
+          placeholder="0"
           keyboardType="numeric"
           value={form.openingBalance}
           onChangeText={(openingBalance) => setForm((f) => ({ ...f, openingBalance }))}
@@ -291,6 +293,7 @@ export default function AccountsScreen() {
         {form.id ? (
           <Input
             label="Current balance"
+            placeholder="0"
             keyboardType="numeric"
             value={form.balance}
             onChangeText={(balance) => setForm((f) => ({ ...f, balance }))}
@@ -317,6 +320,7 @@ export default function AccountsScreen() {
         />
         <Input
           label="Amount"
+          placeholder="e.g. 5000"
           keyboardType="numeric"
           value={transfer.amount}
           onChangeText={(amount) => setTransfer((t) => ({ ...t, amount }))}

@@ -96,7 +96,13 @@ export default function CurrenciesScreen() {
 
       <View style={styles.panel}>
         <Text style={styles.h2}>Converter</Text>
-        <Input label="Amount" keyboardType="decimal-pad" value={amount} onChangeText={setAmount} />
+        <Input
+          label="Amount"
+          placeholder="e.g. 1000"
+          keyboardType="decimal-pad"
+          value={amount}
+          onChangeText={setAmount}
+        />
         <SelectField
           label="From"
           value={from}

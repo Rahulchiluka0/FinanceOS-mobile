@@ -214,6 +214,24 @@ export const aiApi = {
   dismissInsight: (id: string) => api(`/ai/insights/${id}/dismiss`, { method: 'POST', body: {} }),
   actInsight: (id: string) => api(`/ai/insights/${id}/act`, { method: 'POST', body: {} }),
   smartInsights: () => api<any>('/insights/smart'),
+  goalRecommendations: (refresh = false) =>
+    api<any>(`/ai/recommendations/goals${refresh ? '?refresh=1' : ''}`),
+  refreshGoalRecommendations: () =>
+    api<any>('/ai/recommendations/goals/refresh', { method: 'POST', body: {} }),
+  acceptGoalRecommendation: (id: string) =>
+    api<any>(`/ai/recommendations/goals/${id}/accept`, { method: 'POST', body: {} }),
+  dismissGoalRecommendation: (id: string) =>
+    api(`/ai/recommendations/goals/${id}/dismiss`, { method: 'POST', body: {} }),
+  simTemplates: () => api<any[]>('/ai/simulations/templates'),
+  simulations: () => api<any[]>('/ai/simulations'),
+  runSimulation: (body: Record<string, unknown>) =>
+    api<any>('/ai/simulations', { method: 'POST', body }),
+  replay: (params: Record<string, string> = {}) => {
+    const q = new URLSearchParams(
+      Object.fromEntries(Object.entries(params).filter(([, v]) => v != null && v !== '')),
+    ).toString()
+    return api<any>(`/ai/replay${q ? `?${q}` : ''}`)
+  },
 }
 
 

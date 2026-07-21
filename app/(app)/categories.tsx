@@ -211,7 +211,12 @@ export default function CategoriesScreen() {
       {renderGroup('Expense', 'expense', expense)}
 
       <Modal open={open} title={form.id ? 'Edit category' : 'New category'} onClose={() => setOpen(false)}>
-        <Input label="Name" value={form.name} onChangeText={(name) => setForm((f) => ({ ...f, name }))} />
+        <Input
+          label="Name"
+          placeholder="e.g. Groceries"
+          value={form.name}
+          onChangeText={(name) => setForm((f) => ({ ...f, name }))}
+        />
         <SelectField
           label="Type"
           value={form.type}

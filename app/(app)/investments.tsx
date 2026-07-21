@@ -171,7 +171,12 @@ export default function InvestmentsScreen() {
         title={form.id ? 'Edit investment' : 'Add investment'}
         onClose={() => setOpen(false)}
       >
-        <Input label="Name" value={form.name} onChangeText={(name) => setForm((f) => ({ ...f, name }))} />
+        <Input
+          label="Name"
+          placeholder="e.g. Nifty 50 index fund"
+          value={form.name}
+          onChangeText={(name) => setForm((f) => ({ ...f, name }))}
+        />
         <SelectField
           label="Type"
           value={form.type}
@@ -180,12 +185,14 @@ export default function InvestmentsScreen() {
         />
         <Input
           label="Invested (₹)"
+          placeholder="e.g. 50000"
           keyboardType="numeric"
           value={form.invested}
           onChangeText={(invested) => setForm((f) => ({ ...f, invested }))}
         />
         <Input
           label="Current value (₹)"
+          placeholder="e.g. 62500"
           keyboardType="numeric"
           value={form.value}
           onChangeText={(value) => setForm((f) => ({ ...f, value }))}

@@ -1,12 +1,19 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import {
+  Keyboard,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native'
 import { router } from 'expo-router'
 import { Activity, Brain, RefreshCw, Send } from 'lucide-react-native'
 import { aiApi } from '@/api'
 import { Screen } from '@/components/layout/Screen'
 import { PageHead } from '@/components/ui/PageHead'
 import { MetricTile } from '@/components/ui/MetricTile'
-import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { formatCurrency } from '@/utils/format'
@@ -74,6 +81,7 @@ export default function AIScreen() {
   const ask = async (message: string) => {
     const text = message.trim()
     if (!text || busy) return
+    Keyboard.dismiss()
     setInput('')
     setMessages((m) => [...m, { id: `u-${Date.now()}`, role: 'user', text }])
     setBusy(true)
@@ -104,6 +112,7 @@ export default function AIScreen() {
   const summary = hub?.summary || {}
   const twin = hub?.twin || {}
   const checklist: string[] = twin.meta?.checklist || []
+  const canSend = Boolean(input.trim()) && !busy
 
   if (loading && !hub) {
     return (
@@ -114,7 +123,7 @@ export default function AIScreen() {
   }
 
   return (
-    <Screen>
+    <Screen keyboardShouldPersistTaps="always" refreshing={refreshing} onRefresh={refresh}>
       <PageHead
         kicker="Intelligence"
         title="AI Hub"
@@ -151,6 +160,33 @@ export default function AIScreen() {
         >
           <Activity size={16} color={colors.brand} />
           <Text style={styles.linkText}>Health</Text>
+        </Pressable>
+        <Pressable
+          style={styles.linkChip}
+          onPress={() => {
+            lightTap()
+            router.push('/(app)/ai-goals')
+          }}
+        >
+          <Text style={styles.linkText}>Goals</Text>
+        </Pressable>
+        <Pressable
+          style={styles.linkChip}
+          onPress={() => {
+            lightTap()
+            router.push('/(app)/ai-replay')
+          }}
+        >
+          <Text style={styles.linkText}>Replay</Text>
+        </Pressable>
+        <Pressable
+          style={styles.linkChip}
+          onPress={() => {
+            lightTap()
+            router.push('/(app)/ai-simulator')
+          }}
+        >
+          <Text style={styles.linkText}>Sim</Text>
         </Pressable>
       </View>
 
@@ -214,31 +250,44 @@ export default function AIScreen() {
             ) : null}
           </View>
         ))}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.suggestRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          keyboardShouldPersistTaps="always"
+          style={styles.suggestRow}
+        >
           {SUGGESTIONS.map((s) => (
-            <Pressable
-              key={s}
-              style={styles.suggestChip}
-              disabled={busy}
-              onPress={() => ask(s)}
-            >
+            <Pressable key={s} style={styles.suggestChip} disabled={busy} onPress={() => ask(s)}>
               <Text style={styles.suggestText}>{s}</Text>
             </Pressable>
           ))}
         </ScrollView>
         <View style={styles.composer}>
-          <View style={{ flex: 1 }}>
-            <Input
-              value={input}
-              onChangeText={setInput}
-              placeholder="e.g. Food last month"
-              onSubmitEditing={() => ask(input)}
-            />
-          </View>
-          <Button onPress={() => ask(input)} disabled={busy || !input.trim()}>
-            <Send size={16} color="#fff" />
-            Send
-          </Button>
+          <TextInput
+            style={styles.composerInput}
+            value={input}
+            onChangeText={setInput}
+            placeholder="Ask about food, budgets…"
+            placeholderTextColor={colors.muted}
+            editable={!busy}
+            returnKeyType="send"
+            blurOnSubmit={false}
+            onSubmitEditing={() => ask(input)}
+          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Send"
+            hitSlop={10}
+            disabled={!canSend}
+            onPress={() => ask(input)}
+            style={({ pressed }) => [
+              styles.sendBtn,
+              !canSend && styles.sendBtnDisabled,
+              pressed && canSend && styles.sendBtnPressed,
+            ]}
+          >
+            <Send size={18} color="#fff" />
+          </Pressable>
         </View>
       </View>
     </Screen>
@@ -300,5 +349,32 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   suggestText: { fontSize: 12, fontWeight: '600', color: colors.ink },
-  composer: { flexDirection: 'row', gap: 8, alignItems: 'center', marginTop: 8 },
+  composer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  composerInput: {
+    flex: 1,
+    minHeight: 48,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    borderRadius: radius.md,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: colors.ink,
+    backgroundColor: colors.bgElevated,
+  },
+  sendBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: colors.brand,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sendBtnDisabled: { opacity: 0.45 },
+  sendBtnPressed: { opacity: 0.88 },
 })

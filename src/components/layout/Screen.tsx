@@ -25,6 +25,8 @@ type Props = {
   edges?: ('top' | 'right' | 'bottom' | 'left')[]
   /** Extra bottom padding inside scroll content (above tab bar / home indicator). */
   bottomPad?: number
+  /** Allow taps on buttons while the keyboard is open (e.g. chat Send). */
+  keyboardShouldPersistTaps?: 'always' | 'handled' | 'never'
 }
 
 function isModalElement(child: ReactNode) {
@@ -54,13 +56,14 @@ export function Screen({
   contentStyle,
   edges = ['top', 'left', 'right'],
   bottomPad,
+  keyboardShouldPersistTaps = 'handled',
 }: Props) {
   const insets = useSafeAreaInsets()
   const keyboardHeight = useKeyboardHeight()
   const { content, overlays } = splitOverlays(children)
 
   const basePad = bottomPad ?? Math.max(24, insets.bottom + 16)
-  // Leave scroll room above the keyboard so focused inputs stay reachable.
+  // With android softwareKeyboardLayoutMode: "pan", pad so focused fields stay above the keyboard.
   const keyboardPad = keyboardHeight > 0 ? Math.max(48, keyboardHeight - insets.bottom) : 0
   const padBottom = basePad + keyboardPad
 
@@ -71,7 +74,7 @@ export function Screen({
   ) : (
     <ScrollView
       contentContainerStyle={contentStyles}
-      keyboardShouldPersistTaps="handled"
+      keyboardShouldPersistTaps={keyboardShouldPersistTaps}
       keyboardDismissMode="on-drag"
       automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
       showsVerticalScrollIndicator={false}

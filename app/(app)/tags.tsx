@@ -127,6 +127,7 @@ export default function TagsScreen() {
       <Modal open={open} title={form.id ? 'Edit tag' : 'Add tag'} onClose={() => setOpen(false)}>
         <Input
           label="Name"
+          placeholder="e.g. travel"
           hint="Spaces become hyphens; stored lowercase"
           value={form.name}
           onChangeText={(name) =>

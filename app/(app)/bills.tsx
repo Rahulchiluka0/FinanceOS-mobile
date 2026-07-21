@@ -187,7 +187,12 @@ export default function BillsScreen() {
       </View>
 
       <Modal open={open} title={form.id ? 'Edit bill' : 'Add bill'} onClose={() => setOpen(false)}>
-        <Input label="Title" value={form.title} onChangeText={(title) => setForm((f) => ({ ...f, title }))} />
+        <Input
+          label="Title"
+          placeholder="e.g. Electricity — July"
+          value={form.title}
+          onChangeText={(title) => setForm((f) => ({ ...f, title }))}
+        />
         <SelectField
           label="Category"
           value={form.category}
@@ -199,6 +204,7 @@ export default function BillsScreen() {
         />
         <Input
           label="Amount (₹)"
+          placeholder="e.g. 2400"
           keyboardType="numeric"
           value={form.amount}
           onChangeText={(amount) => setForm((f) => ({ ...f, amount }))}

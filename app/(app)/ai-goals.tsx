@@ -105,6 +105,14 @@ export default function AiGoalsScreen() {
           </View>
         </View>
       ))}
+      {!loading && (pack?.recommendations || []).length === 0 ? (
+        <View style={styles.empty}>
+          <Text style={styles.emptyTitle}>No ideas right now</Text>
+          <Text style={styles.muted}>
+            Refresh after more income history, or open Savings Goals to create one yourself.
+          </Text>
+        </View>
+      ) : null}
       <Pressable onPress={() => router.push('/(app)/goals')}>
         <Text style={styles.link}>Open Savings Goals →</Text>
       </Pressable>
@@ -128,4 +136,13 @@ const styles = StyleSheet.create({
   meta: { fontSize: 12, fontWeight: '600', color: colors.brand, marginBottom: 10 },
   row: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   link: { marginTop: 16, color: colors.brand, fontWeight: '600' },
+  empty: {
+    marginTop: 16,
+    padding: 16,
+    borderRadius: radius.lg,
+    backgroundColor: colors.bgElevated,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  emptyTitle: { fontWeight: '700', color: colors.ink, marginBottom: 6 },
 })

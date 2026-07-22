@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Alert, StyleSheet, Text, View } from 'react-native'
+import { useLocalSearchParams } from 'expo-router'
 import { useData, useEnsureData } from '@/context/DataContext'
 import { Screen } from '@/components/layout/Screen'
 import { PageHead } from '@/components/ui/PageHead'
@@ -21,6 +22,12 @@ const empty = { id: '', name: '', target: '', deadline: '', color: '#1A56DB', cu
 
 export default function GoalsScreen() {
   useEnsureData(['goals'])
+  const params = useLocalSearchParams<{
+    prefill?: string
+    name?: string
+    target?: string
+    deadline?: string
+  }>()
   const { goals, loading, refresh, saveGoal, adjustGoal, deleteGoal } = useData()
   const [open, setOpen] = useState(false)
   const [adjust, setAdjust] = useState<{ goal: Goal; mode: 'deposit' | 'withdraw' } | null>(null)
@@ -28,6 +35,17 @@ export default function GoalsScreen() {
   const [amount, setAmount] = useState('')
   const [busy, setBusy] = useState(false)
   const [busyId, setBusyId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (params.prefill !== '1') return
+    setForm({
+      ...empty,
+      name: typeof params.name === 'string' ? params.name : '',
+      target: typeof params.target === 'string' ? params.target : '',
+      deadline: typeof params.deadline === 'string' ? params.deadline : '',
+    })
+    setOpen(true)
+  }, [params.prefill, params.name, params.target, params.deadline])
 
   const onSave = async () => {
     if (!form.name.trim() || !form.target) return Alert.alert('Name and target required')

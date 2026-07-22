@@ -1,15 +1,49 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
-import { Sparkles } from 'lucide-react-native'
+import { router } from 'expo-router'
+import { Sparkles, Target } from 'lucide-react-native'
 import { aiApi } from '@/api'
 import { Screen } from '@/components/layout/Screen'
 import { PageHead } from '@/components/ui/PageHead'
 import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
 import { LoadingState } from '@/components/ui/LoadingState'
+import { SeriesBarChart } from '@/components/charts/SeriesBarChart'
 import { formatCurrency } from '@/utils/format'
 import { apiErrorMessage, apiFieldErrors } from '@/utils/apiError'
 import { colors, radius } from '@/theme'
 import { lightTap } from '@/utils/haptics'
+
+const TEMPLATE_HELP: Record<string, { question: string; how: string }> = {
+  buy_car: {
+    question: 'Can I afford a car?',
+    how: 'Down payment + EMI + running costs vs your cash path.',
+  },
+  buy_house: {
+    question: 'Can I afford a house?',
+    how: 'Mortgage EMI with optional rent you stop paying.',
+  },
+  salary_change: {
+    question: 'What if my salary changes?',
+    how: 'Swap income and see leftover cash each month.',
+  },
+  new_loan: {
+    question: 'What if I take a new loan?',
+    how: 'Add EMI and project the hit to liquid cash.',
+  },
+  vacation: {
+    question: 'What if I spend on a trip?',
+    how: 'One-time spend, then normal surplus continues.',
+  },
+  increase_sip: {
+    question: 'What if I invest more?',
+    how: 'Extra SIP from free cashflow each month.',
+  },
+  emergency_push: {
+    question: 'What if I save harder?',
+    how: 'Park a fixed amount toward your buffer.',
+  },
+}
 
 function validateSimForm({
   params,
@@ -24,7 +58,7 @@ function validateSimForm({
   const h = Number(horizon)
   if (horizon === '' || !Number.isFinite(h)) {
     fieldErrors.horizonMonths = 'Enter how many months to project'
-  } else if (!Number.isInteger(h) || h < 6 || h > 60) {
+  } else if (h < 6 || h > 60 || Math.round(h) !== h) {
     fieldErrors.horizonMonths = 'Must be a whole number between 6 and 60'
   }
   for (const f of fields || []) {
@@ -37,6 +71,37 @@ function validateSimForm({
     }
   }
   return fieldErrors
+}
+
+function verdict(result: any) {
+  const net = result?.comparison?.scenarioMonthlyNet
+  const oneTime = result?.comparison?.oneTimeOutflow || 0
+  const end = result?.comparison?.scenarioEndLiquid
+  const baseEnd = result?.comparison?.baselineEndLiquid
+  if (typeof net !== 'number') return { tone: 'neutral' as const, title: 'See the projection' }
+  if (net < 0) return { tone: 'danger' as const, title: 'Tight — cashflow goes negative' }
+  if (oneTime > 0 && end < baseEnd * 0.5) {
+    return { tone: 'warning' as const, title: 'Possible, but it drains your cushion' }
+  }
+  return { tone: 'success' as const, title: 'Looks workable on paper' }
+}
+
+function surplusGoalParams(result: any) {
+  const net = Number(result?.comparison?.scenarioMonthlyNet)
+  if (!(net > 0)) return null
+  const months = Math.min(60, Math.max(6, Number(result.horizonMonths) || 12))
+  const target = Math.round(net * months)
+  const d = new Date()
+  d.setFullYear(d.getFullYear(), d.getMonth() + months, d.getDate())
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return {
+    prefill: '1',
+    name: 'Save my monthly surplus',
+    target: String(target),
+    deadline: `${yyyy}-${mm}-${dd}`,
+  }
 }
 
 export default function AiSimulatorScreen() {
@@ -54,6 +119,10 @@ export default function AiSimulatorScreen() {
     () => templates.find((t) => t.id === templateId) || null,
     [templates, templateId],
   )
+  const help = TEMPLATE_HELP[templateId] || {
+    question: active?.label || 'What if…?',
+    how: active?.description || '',
+  }
 
   useEffect(() => {
     aiApi
@@ -76,6 +145,7 @@ export default function AiSimulatorScreen() {
     lightTap()
     setTemplateId(id)
     setResult(null)
+    setLoading(false)
     setFieldErrors({})
     setError('')
     const t = templates.find((x) => x.id === id)
@@ -98,6 +168,7 @@ export default function AiSimulatorScreen() {
     setLoading(true)
     setError('')
     setFieldErrors({})
+    setResult(null)
     lightTap()
     try {
       const numeric: Record<string, number> = {}
@@ -118,6 +189,17 @@ export default function AiSimulatorScreen() {
     }
   }
 
+  const call = verdict(result)
+  const cmp = result?.comparison || {}
+  const seriesPoints = useMemo(() => {
+    const series = result?.series?.scenario || []
+    return series.map((p: any) => ({
+      value: Number(p.liquid) || 0,
+      label: String(p.month),
+      caption: `Month ${p.month}: ${formatCurrency(p.liquid)}`,
+    }))
+  }, [result])
+
   if (booting) {
     return (
       <Screen>
@@ -127,27 +209,42 @@ export default function AiSimulatorScreen() {
   }
 
   return (
-    <Screen>
+    <Screen keyboardShouldPersistTaps="handled">
       <PageHead
         kicker="Intelligence"
         title="Life Simulator"
-        subtitle="What-if only — never writes the ledger"
+        subtitle="Ask a money “what if?” — projection only"
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <Text style={styles.warn}>Simulation only — nothing is saved to accounts or loans.</Text>
-      <View style={styles.chips}>
-        {templates.map((t) => (
-          <Pressable
-            key={t.id}
-            style={[styles.chip, templateId === t.id && styles.chipActive]}
-            onPress={() => selectTemplate(t.id)}
-          >
-            <Text style={[styles.chipText, templateId === t.id && styles.chipTextActive]}>
-              {t.label}
-            </Text>
-          </Pressable>
-        ))}
+
+      <View style={styles.warn}>
+        <Text style={styles.warnText}>
+          Safe sandbox — never creates loans, transactions, or goals by itself.
+        </Text>
       </View>
+
+      <Text style={styles.step}>1 · Pick a question</Text>
+      <View style={styles.chips}>
+        {templates.map((t) => {
+          const meta = TEMPLATE_HELP[t.id]
+          const activeChip = templateId === t.id
+          return (
+            <Pressable
+              key={t.id}
+              style={[styles.chip, activeChip && styles.chipActive]}
+              onPress={() => selectTemplate(t.id)}
+            >
+              <Text style={[styles.chipText, activeChip && styles.chipTextActive]}>
+                {meta?.question || t.label}
+              </Text>
+            </Pressable>
+          )
+        })}
+      </View>
+
+      <Text style={styles.step}>2 · {help.question}</Text>
+      <Text style={styles.stepHow}>{help.how}</Text>
+
       {(active?.fields || []).map((f: any) => (
         <View key={f.key} style={styles.field}>
           <Text style={styles.label}>{f.label}</Text>
@@ -171,7 +268,7 @@ export default function AiSimulatorScreen() {
         </View>
       ))}
       <View style={styles.field}>
-        <Text style={styles.label}>Horizon (months)</Text>
+        <Text style={styles.label}>How many months to project?</Text>
         <TextInput
           style={[styles.input, fieldErrors.horizonMonths ? styles.inputError : null]}
           keyboardType="numeric"
@@ -194,21 +291,102 @@ export default function AiSimulatorScreen() {
           <Text style={styles.hint}>Between 6 and 60 months</Text>
         )}
       </View>
+
       <Button onPress={run} disabled={loading}>
         <Sparkles size={16} color="#fff" />
-        {loading ? 'Running…' : 'Run simulation'}
+        {loading ? 'Projecting…' : result ? 'Run again' : 'See what happens'}
       </Button>
+
       {result ? (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Result</Text>
+        <View style={styles.result}>
+          <Text style={styles.step}>3 · What changes?</Text>
+          <View style={styles.resultHead}>
+            <Badge
+              tone={
+                call.tone === 'success'
+                  ? 'success'
+                  : call.tone === 'danger'
+                    ? 'danger'
+                    : call.tone === 'warning'
+                      ? 'warning'
+                      : 'neutral'
+              }
+            >
+              {call.title}
+            </Badge>
+          </View>
           <Text style={styles.body}>{result.recommendation}</Text>
-          <Text style={styles.meta}>
-            Net {formatCurrency(result.comparison?.scenarioMonthlyNet)}/mo · End liquid{' '}
-            {formatCurrency(result.comparison?.scenarioEndLiquid)}
-          </Text>
-          <Text style={styles.meta}>
-            Health {result.health?.baseline} → {result.health?.scenario}
-          </Text>
+
+          <View style={styles.compare}>
+            <View style={styles.compareCard}>
+              <Text style={styles.compareLabel}>If you do nothing</Text>
+              <Text style={styles.compareValue}>{formatCurrency(cmp.baselineMonthlyNet)}/mo</Text>
+              <Text style={styles.compareMeta}>Monthly leftover</Text>
+              <Text style={styles.compareEnd}>{formatCurrency(cmp.baselineEndLiquid)}</Text>
+              <Text style={styles.compareMeta}>After {result.horizonMonths} mo</Text>
+            </View>
+            <View style={[styles.compareCard, styles.compareScenario]}>
+              <Text style={styles.compareLabel}>With this plan</Text>
+              <Text style={styles.compareValue}>{formatCurrency(cmp.scenarioMonthlyNet)}/mo</Text>
+              <Text style={styles.compareMeta}>Monthly leftover</Text>
+              <Text style={styles.compareEnd}>{formatCurrency(cmp.scenarioEndLiquid)}</Text>
+              <Text style={styles.compareMeta}>After {result.horizonMonths} mo</Text>
+            </View>
+          </View>
+
+          <View style={styles.pills}>
+            {cmp.oneTimeOutflow > 0 ? (
+              <Text style={styles.pill}>Upfront · {formatCurrency(cmp.oneTimeOutflow)}</Text>
+            ) : null}
+            <Text style={styles.pill}>
+              Health {result.health?.baseline} → {result.health?.scenario}
+            </Text>
+            {cmp.goalDelayMonths > 0 ? (
+              <Text style={styles.pill}>Goals may slip ~{cmp.goalDelayMonths} mo</Text>
+            ) : null}
+          </View>
+
+          <View style={styles.chartCard}>
+            <Text style={styles.cardTitle}>Cash over time (this plan)</Text>
+            <Text style={styles.cardSub}>Projected liquid balance by month</Text>
+            <SeriesBarChart
+              key={`${result.template}-${result.horizonMonths}-${result.asOf || ''}-${seriesPoints.length}`}
+              points={seriesPoints}
+              height={110}
+              formatValue={(v) => formatCurrency(v)}
+              emptyLabel="No series returned for this run."
+              hint="Tap a bar to inspect a month"
+            />
+            <View style={styles.axis}>
+              <Text style={styles.axisText}>Now</Text>
+              <Text style={styles.axisText}>{result.horizonMonths} mo</Text>
+            </View>
+          </View>
+
+          <Button onPress={run} disabled={loading} variant="secondary">
+            <Sparkles size={16} color={colors.brand} />
+            {loading ? 'Projecting…' : 'Update projection'}
+          </Button>
+
+          {surplusGoalParams(result) ? (
+            <Button
+              variant="secondary"
+              onPress={() => {
+                lightTap()
+                const q = surplusGoalParams(result)!
+                router.push({
+                  pathname: '/(app)/goals',
+                  params: q,
+                })
+              }}
+            >
+              <Target size={16} color={colors.brand} /> Turn surplus into a goal
+            </Button>
+          ) : (
+            <Button variant="secondary" onPress={() => router.push('/(app)/ai-goals')}>
+              <Target size={16} color={colors.brand} /> Open Goal Planner
+            </Button>
+          )}
         </View>
       ) : null}
     </Screen>
@@ -218,23 +396,31 @@ export default function AiSimulatorScreen() {
 const styles = StyleSheet.create({
   error: { color: colors.danger, marginBottom: 8 },
   warn: {
-    color: '#92400e',
     backgroundColor: 'rgba(217,119,6,0.12)',
-    padding: 10,
+    padding: 12,
     borderRadius: radius.md,
-    marginBottom: 12,
-    fontSize: 13,
+    marginBottom: 14,
   },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  warnText: { color: '#92400e', fontSize: 13, lineHeight: 18 },
+  step: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.ink,
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  stepHow: { color: colors.muted, fontSize: 13, marginBottom: 12, lineHeight: 18 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
   chip: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 999,
+    borderRadius: radius.md,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 10,
     backgroundColor: colors.surface,
+    maxWidth: '100%',
   },
-  chipActive: { borderColor: colors.brand, backgroundColor: colors.brandSoft || '#e8effc' },
+  chipActive: { borderColor: colors.brand, backgroundColor: colors.brandSoft },
   chipText: { fontSize: 12, fontWeight: '600', color: colors.ink },
   chipTextActive: { color: colors.brand },
   field: { marginBottom: 10 },
@@ -248,17 +434,47 @@ const styles = StyleSheet.create({
     padding: 12,
     color: colors.ink,
     backgroundColor: colors.surface,
+    fontSize: 16,
   },
   inputError: { borderColor: colors.danger },
-  card: {
-    marginTop: 14,
+  result: { marginTop: 18, gap: 10 },
+  resultHead: { marginBottom: 4 },
+  body: { color: colors.ink, lineHeight: 20, fontSize: 14 },
+  compare: { flexDirection: 'row', gap: 10 },
+  compareCard: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  compareScenario: { borderColor: colors.brand, backgroundColor: colors.brandSoft },
+  compareLabel: { fontSize: 11, fontWeight: '700', color: colors.muted, marginBottom: 6 },
+  compareValue: { fontSize: 16, fontWeight: '800', color: colors.ink },
+  compareEnd: { fontSize: 15, fontWeight: '800', color: colors.ink, marginTop: 8 },
+  compareMeta: { fontSize: 11, color: colors.muted, marginTop: 2 },
+  pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  pill: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.inkSoft,
+    backgroundColor: colors.bgElevated,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radius.full,
+    overflow: 'hidden',
+  },
+  chartCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     padding: 14,
     borderWidth: 1,
     borderColor: colors.border,
+    overflow: 'hidden',
   },
-  cardTitle: { fontWeight: '700', marginBottom: 8, color: colors.ink },
-  body: { color: colors.ink, lineHeight: 20, fontSize: 14, marginBottom: 8 },
-  meta: { color: colors.muted, fontSize: 12, marginBottom: 4 },
+  cardTitle: { fontWeight: '700', color: colors.ink },
+  cardSub: { color: colors.muted, fontSize: 12, marginTop: 2, marginBottom: 10 },
+  axis: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
+  axisText: { fontSize: 11, color: colors.muted, fontWeight: '600' },
 })
